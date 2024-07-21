@@ -3,7 +3,7 @@ kind: ContainerCluster
 metadata:
   name: ind-cluster
 spec:
-  location: asia-south1-a
+  location: us-east1-b
   initialNodeCount: 1
   nodeConfig:
     machineType: e2-medium
