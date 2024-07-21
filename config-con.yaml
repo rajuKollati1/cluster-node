@@ -1,0 +1,93 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: configconnector
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: config-connector
+  namespace: configconnector
+---
+apiVersion: v1
+kind: Role
+metadata:
+  name: config-connector
+  namespace: configconnector
+rules:
+  - apiGroups: [""]
+    resources: ["pods", "services", "endpoints", "events"]
+    verbs: ["list", "watch", "get"]
+  - apiGroups: ["apps"]
+    resources: ["deployments", "replicasets", "daemonsets", "statefulsets"]
+    verbs: ["list", "watch", "get"]
+  - apiGroups: ["storage.k8s.io"]
+    resources: ["storageclasses"]
+    verbs: ["list", "watch", "get"]
+  - apiGroups: ["config.cnrm.cloud.google.com"]
+    resources: ["*"]
+    verbs: ["list", "watch", "get", "create", "update", "delete"]
+---
+apiVersion: v1
+kind: RoleBinding
+metadata:
+  name: config-connector
+  namespace: configconnector
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: config-connector
+subjects:
+  - kind: ServiceAccount
+    name: config-connector
+    namespace: configconnector
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: config-connector
+  namespace: configconnector
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: config-connector
+  template:
+    metadata:
+      labels:
+        app: config-connector
+    spec:
+      serviceAccountName: config-connector
+      containers:
+        - name: config-connector
+          image: gcr.io/google.com/cloudsdktool/cloud-sdk:alpine
+          command: ["/bin/sh", "-c"]
+          args:
+            - >
+              # Setup the Config Connector controller
+              /usr/bin/entrypoint.sh configconnector
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: config-connector-config
+  namespace: configconnector
+data:
+  config.yaml: |
+    apiVersion: v1
+    kind: Config
+    clusters:
+    - cluster:
+        certificate-authority-data: <CA_CERTIFICATE>
+        server: <KUBERNETES_API_SERVER>
+      name: kubernetes
+    contexts:
+    - context:
+        cluster: kubernetes
+        user: kubernetes
+      name: kubernetes
+    current-context: kubernetes
+    users:
+    - name: kubernetes
+      user:
+        token: <BEARER_TOKEN>
