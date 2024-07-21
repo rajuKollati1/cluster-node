@@ -1,0 +1,16 @@
+apiVersion: container.cnrm.cloud.google.com/v1beta1
+kind: ContainerNodePool
+metadata:
+  name: hyderabadnode-pool
+spec:
+  clusterRef:
+    name: ind-cluster
+  location: asia-south1-a
+  initialNodeCount: 1
+  autoscaling:
+    minNodeCount: 1
+    maxNodeCount: 3
+  config:
+    machineType: e2-medium
+    oauthScopes:
+      - https://www.googleapis.com/auth/cloud-platform
